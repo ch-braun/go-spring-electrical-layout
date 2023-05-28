@@ -5,6 +5,8 @@ import (
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/layout"
 	"gonum.org/v1/gonum/spatial/r2"
+	"log"
+	"math"
 )
 
 type SpringR2 struct {
@@ -39,7 +41,6 @@ func assignInitialCoordinates(g graph.Graph, layoutR2 layout.LayoutR2, randomize
 			vecR2 := r2.Vec{X: 0, Y: 0}
 			layoutR2.SetCoord2(n.ID(), vecR2)
 		}
-		iteratorNodes.Reset()
 		return
 	}
 
@@ -59,17 +60,46 @@ func assignInitialCoordinates(g graph.Graph, layoutR2 layout.LayoutR2, randomize
 		}
 		layoutR2.SetCoord2(n.ID(), vecR2)
 	}
-	iteratorNodes.Reset()
 }
 
-func (spring SpringR2) Update(g graph.Graph, layoutR2 layout.LayoutR2) bool {
-	if spring.Updates <= 0 {
+func nodeDistance(id1 int64, id2 int64, layoutR2 layout.LayoutR2) float64 {
+	vec1 := layoutR2.Coord2(id1)
+	vec2 := layoutR2.Coord2(id2)
+
+	return math.Sqrt((vec2.X-vec1.X)*(vec2.X-vec1.X) + (vec2.Y-vec1.Y)*(vec2.Y-vec1.Y))
+}
+
+func (s SpringR2) Update(g graph.Graph, layoutR2 layout.LayoutR2) bool {
+	if s.Updates <= 0 {
 		return false
 	}
-	spring.Updates--
+	s.Updates--
 
 	if !layoutR2.IsInitialized() {
-		assignInitialCoordinates(g, layoutR2, spring.RandomizeLocations, spring.RandomizerSeed, spring.OptimalDistance)
+		assignInitialCoordinates(g, layoutR2, s.RandomizeLocations, s.RandomizerSeed, s.OptimalDistance)
+	}
+
+	iteratorNodesOuter, iteratorNodesInner := g.Nodes(), g.Nodes()
+
+	for iteratorNodesOuter.Next() {
+		n1 := iteratorNodesOuter.Node()
+		for iteratorNodesInner.Next() {
+			n2 := iteratorNodesInner.Node()
+
+			if n1.ID() == n2.ID() {
+				continue
+			}
+			distance := nodeDistance(n1.ID(), n2.ID(), layoutR2)
+			forceRepulsive := -s.RepulsionStrength * (s.OptimalDistance * s.OptimalDistance) /
+				math.Abs(distance)
+
+			forceAttractive := (distance * distance) / s.OptimalDistance
+
+			forceCombinedX := (forceRepulsive + forceAttractive) / (math.Abs(distance)) * (layoutR2.Coord2(n2.ID()).X - layoutR2.Coord2(n1.ID()).X)
+			forceCombinedY := (forceRepulsive + forceAttractive) / (math.Abs(distance)) * (layoutR2.Coord2(n2.ID()).Y - layoutR2.Coord2(n1.ID()).Y)
+
+			log.Printf("%v %v", forceCombinedX, forceCombinedY)
+		}
 	}
 
 	return true

@@ -5,11 +5,10 @@ import (
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/layout"
 	"gonum.org/v1/gonum/spatial/r2"
-	"log"
 	"math"
 )
 
-type SpringR2 struct {
+type SpringElectricR2 struct {
 	// RandomizeLocations indicates whether the nodes should
 	// initially be placed at random locations or at (0,0).
 	RandomizeLocations bool
@@ -24,8 +23,25 @@ type SpringR2 struct {
 	// RepulsionStrength represents the regularization parameter C in the paper.
 	RepulsionStrength float64
 
+	// RepulsionExponent represents parameter p (p > 0) for the repulsive force to reduce distortion effects.
+	// Default should be 1.
+	RepulsionExponent uint
+
 	// Updates represents the number of iterations that should be run.
 	Updates int
+
+	// RemainingUpdates represents the number of updates that remain for this optimization cycle.
+	RemainingUpdates int
+
+	// StepSize represents the distance each node may travel for every update.
+	StepSize float64
+
+	// CoolingRate represents
+	CoolingRate float64
+
+	// StopThreshold represents the stopping criteria for the simulation.
+	// Once the movements are small enough, the simulation stops.
+	StopThreshold float64
 }
 
 // assignInitialCoordinates assigns an initial x and y value to each node.
@@ -62,45 +78,69 @@ func assignInitialCoordinates(g graph.Graph, layoutR2 layout.LayoutR2, randomize
 	}
 }
 
-func nodeDistance(id1 int64, id2 int64, layoutR2 layout.LayoutR2) float64 {
-	vec1 := layoutR2.Coord2(id1)
-	vec2 := layoutR2.Coord2(id2)
-
+func calculateVecDistance(vec1 r2.Vec, vec2 r2.Vec) float64 {
 	return math.Sqrt((vec2.X-vec1.X)*(vec2.X-vec1.X) + (vec2.Y-vec1.Y)*(vec2.Y-vec1.Y))
 }
 
-func (s SpringR2) Update(g graph.Graph, layoutR2 layout.LayoutR2) bool {
-	if s.Updates <= 0 {
+func calculateVecDifference(vec1 r2.Vec, vec2 r2.Vec) r2.Vec {
+	return r2.Vec{
+		X: vec2.X - vec1.X,
+		Y: vec2.Y - vec1.Y,
+	}
+}
+
+func (s *SpringElectricR2) Update(g graph.Graph, layoutR2 layout.LayoutR2) bool {
+
+	if s.RemainingUpdates <= 0 {
 		return false
 	}
-	s.Updates--
 
 	if !layoutR2.IsInitialized() {
 		assignInitialCoordinates(g, layoutR2, s.RandomizeLocations, s.RandomizerSeed, s.OptimalDistance)
 	}
 
+	forces := make(map[int64]r2.Vec, g.Nodes().Len())
+	layoutNew := make(map[int64]r2.Vec, g.Nodes().Len())
+	stepSize := s.StepSize * math.Pow(s.CoolingRate, float64(s.Updates-s.RemainingUpdates))
+	s.RemainingUpdates -= 1
+
 	iteratorNodesOuter, iteratorNodesInner := g.Nodes(), g.Nodes()
 
 	for iteratorNodesOuter.Next() {
-		n1 := iteratorNodesOuter.Node()
+		n1 := iteratorNodesOuter.Node().ID()
+		forceCombined := r2.Vec{X: 0, Y: 0}
 		for iteratorNodesInner.Next() {
-			n2 := iteratorNodesInner.Node()
+			n2 := iteratorNodesInner.Node().ID()
 
-			if n1.ID() == n2.ID() {
+			if n1 == n2 {
 				continue
 			}
-			distance := nodeDistance(n1.ID(), n2.ID(), layoutR2)
-			forceRepulsive := -s.RepulsionStrength * (s.OptimalDistance * s.OptimalDistance) /
-				math.Abs(distance)
+			vec1 := layoutR2.Coord2(n1)
+			vec2 := layoutR2.Coord2(n2)
 
+			distance := calculateVecDistance(vec1, vec2)
+			vectorDifference := calculateVecDifference(vec1, vec2)
+
+			forceRepulsive := -s.RepulsionStrength * math.Pow(s.OptimalDistance, 1.0+float64(s.RepulsionExponent)) /
+				math.Pow(distance, float64(s.RepulsionExponent))
 			forceAttractive := (distance * distance) / s.OptimalDistance
 
-			forceCombinedX := (forceRepulsive + forceAttractive) / (math.Abs(distance)) * (layoutR2.Coord2(n2.ID()).X - layoutR2.Coord2(n1.ID()).X)
-			forceCombinedY := (forceRepulsive + forceAttractive) / (math.Abs(distance)) * (layoutR2.Coord2(n2.ID()).Y - layoutR2.Coord2(n1.ID()).Y)
+			forceCombined.X += (forceRepulsive + forceAttractive) / distance * vectorDifference.X
+			forceCombined.Y += (forceRepulsive + forceAttractive) / distance * vectorDifference.Y
+		}
+		iteratorNodesInner.Reset()
 
-			log.Printf("%v %v", forceCombinedX, forceCombinedY)
+		forces[n1] = forceCombined
+		layoutNew[n1] = r2.Vec{
+			X: layoutR2.Coord2(n1).X + stepSize*forceCombined.X,
+			Y: layoutR2.Coord2(n1).Y + stepSize*forceCombined.Y,
 		}
 	}
+	accumulativeDelta := 0.0
+	for nid, vec := range layoutNew {
+		accumulativeDelta += calculateVecDistance(layoutR2.Coord2(nid), vec)
+		layoutR2.SetCoord2(nid, vec)
+	}
 
-	return true
+	return accumulativeDelta > s.StopThreshold
 }

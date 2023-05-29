@@ -21,12 +21,15 @@ func main() {
 		}
 	}
 
-	spring := layout.SpringR2{
+	spring := layout.SpringElectricR2{
 		RandomizeLocations: true,
 		RandomizerSeed:     uint64(42),
 		OptimalDistance:    10.0,
-		RepulsionStrength:  1.0,
+		RepulsionStrength:  10.0,
+		RepulsionExponent:  3,
 		Updates:            10,
+		RemainingUpdates:   10,
+		StepSize:           0.001,
 	}
 
 	// Make a layout optimizer with the target graph and update function.

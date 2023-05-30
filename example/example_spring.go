@@ -9,7 +9,7 @@ import (
 func main() {
 	graph := simple.NewWeightedDirectedGraph(0.0, 0.0)
 	for i := 0; i < 10; i++ {
-		graph.AddNode(simple.Node(i))
+		graph.AddNode(layout.SimpleMassNode{Node: simple.Node(i), Mass: float64(i + 1)})
 	}
 
 	for i := 0; i < 10; i++ {
@@ -17,20 +17,19 @@ func main() {
 			if i == j {
 				continue
 			}
-			graph.SetWeightedEdge(graph.NewWeightedEdge(simple.Node(i), simple.Node(j), float64(i+j)))
+			graph.SetWeightedEdge(graph.NewWeightedEdge(layout.SimpleMassNode{Node: simple.Node(i), Mass: float64(i + 1)}, layout.SimpleMassNode{Node: simple.Node(j), Mass: float64(j + 1)}, float64(i+j)))
 		}
 	}
 
-	spring := layout.SpringElectricR2{
-		RandomizeLocations: true,
-		RandomizerSeed:     uint64(42),
-		OptimalDistance:    10.0,
-		RepulsionStrength:  10.0,
-		RepulsionExponent:  3,
-		Updates:            10,
-		RemainingUpdates:   10,
-		StepSize:           0.001,
-	}
+	spring := layout.NewSpringElectricR2(
+		uint64(42),
+		10.0,
+		10.0,
+		3,
+		100,
+		0.001,
+		0.6,
+		0.2)
 
 	// Make a layout optimizer with the target graph and update function.
 	optimizer := gonumLayout.NewOptimizerR2(graph, spring.Update)

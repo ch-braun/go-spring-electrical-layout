@@ -61,7 +61,7 @@ func (s *ForceStack) Update(g graph.Graph, layoutR2 gn_layout.LayoutR2) bool {
 	}
 
 	if !layoutR2.IsInitialized() {
-		layout.AssignInitialCoordinates(g, layoutR2, s.RandomizerSeed)
+		layout.AssignRandomCoordinates(g, layoutR2, s.RandomizerSeed)
 	}
 
 	if s.forces == nil {

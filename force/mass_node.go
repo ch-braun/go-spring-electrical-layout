@@ -1,4 +1,4 @@
-package forces
+package force
 
 import (
 	"gonum.org/v1/gonum/graph/simple"

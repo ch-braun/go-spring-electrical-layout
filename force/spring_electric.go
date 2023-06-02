@@ -1,4 +1,4 @@
-package forces
+package force
 
 import (
 	"gonum.org/v1/gonum/graph"
@@ -23,16 +23,12 @@ type SpringElectricalR2 struct {
 func NewSpringElectricalR2(
 	optimalDistance float64,
 	repulsionStrength float64,
-	repulsionExponent uint) SpringElectricalR2 {
-	return SpringElectricalR2{
+	repulsionExponent uint) *SpringElectricalR2 {
+	return &SpringElectricalR2{
 		OptimalDistance:   optimalDistance,
 		RepulsionStrength: repulsionStrength,
 		RepulsionExponent: repulsionExponent,
 	}
-}
-
-func calculateVecDistance(vec1 r2.Vec, vec2 r2.Vec) float64 {
-	return r2.Norm(r2.Sub(vec1, vec2))
 }
 
 func (s *SpringElectricalR2) Calculate(g graph.Graph, layoutR2 layout.LayoutR2) map[int64]r2.Vec {
@@ -54,7 +50,7 @@ func (s *SpringElectricalR2) Calculate(g graph.Graph, layoutR2 layout.LayoutR2) 
 			vec1 := layoutR2.Coord2(id1)
 			vec2 := layoutR2.Coord2(id2)
 
-			distance := calculateVecDistance(vec1, vec2)
+			distance := r2.Norm(r2.Sub(vec1, vec2))
 			vectorDifference := r2.Sub(vec1, vec2)
 
 			forceRepulsive := -s.RepulsionStrength * math.Pow(s.OptimalDistance, 1.0+float64(s.RepulsionExponent)) /

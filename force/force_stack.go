@@ -1,4 +1,4 @@
-package forces
+package force
 
 import (
 	"github.com/ch-braun/go-spring-electrical-layout/layout"
@@ -104,7 +104,7 @@ func (s *ForceStack) Update(g graph.Graph, layoutR2 gn_layout.LayoutR2) bool {
 
 	accumulativeDelta := 0.0
 	for nid, vec := range layoutNew {
-		accumulativeDelta += calculateVecDistance(layoutR2.Coord2(nid), vec)
+		accumulativeDelta += r2.Norm(r2.Sub(layoutR2.Coord2(nid), vec))
 		layoutR2.SetCoord2(nid, vec)
 	}
 

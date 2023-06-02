@@ -1,4 +1,4 @@
-package layout
+package forces
 
 import (
 	"gonum.org/v1/gonum/graph/simple"

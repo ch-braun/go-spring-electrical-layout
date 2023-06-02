@@ -7,7 +7,7 @@ import (
 	"gonum.org/v1/gonum/spatial/r2"
 )
 
-// AssignRandomCoordinates assigns an initial x and y value to each node.
+// AssignRandomCoordinates assigns an x and y value to each node.
 // These values are randomly chosen from within the value range:
 // [-5.0*g.Nodes().Len(), 5.0*g.Nodes().Len()]
 func AssignRandomCoordinates(g graph.Graph, layoutR2 layout.LayoutR2, randomizerSeed uint64) {

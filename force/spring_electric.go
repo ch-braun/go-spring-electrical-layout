@@ -55,7 +55,13 @@ func (s *SpringElectricalR2) Calculate(g graph.Graph, layoutR2 layout.LayoutR2) 
 
 			forceRepulsive := -s.RepulsionStrength * math.Pow(s.OptimalDistance, 1.0+float64(s.RepulsionExponent)) /
 				math.Pow(distance, float64(s.RepulsionExponent))
-			forceAttractive := (distance * distance) / s.OptimalDistance
+
+			var forceAttractive float64
+			if e := g.Edge(id1, id2); e != nil {
+				forceAttractive = (distance * distance) / s.OptimalDistance
+			} else {
+				forceAttractive = 0.
+			}
 
 			vectorDifference = r2.Scale((forceRepulsive+forceAttractive)/distance, vectorDifference)
 

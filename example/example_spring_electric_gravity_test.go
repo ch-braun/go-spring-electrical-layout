@@ -4,6 +4,7 @@ import (
 	"github.com/ch-braun/go-spring-electrical-layout/force"
 	"gonum.org/v1/gonum/graph/layout"
 	"gonum.org/v1/gonum/spatial/r2"
+	"log"
 	"testing"
 )
 
@@ -23,5 +24,11 @@ func TestSpringElectricGravity(t *testing.T) {
 	optimizer := layout.NewOptimizerR2(graph, forceStack.Update)
 
 	for optimizer.Update() {
+	}
+
+	iter := graph.Nodes()
+
+	for iter.Next() {
+		log.Printf("%v: %v", iter.Node().ID(), optimizer.LayoutNodeR2(iter.Node().ID()).Coord2)
 	}
 }

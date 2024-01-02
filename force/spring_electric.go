@@ -16,18 +16,24 @@ type SpringElectricalR2 struct {
 	RepulsionStrength float64
 
 	// RepulsionExponent represents parameter p (p > 0) for the repulsive force to reduce distortion effects.
-	// Default should be 1.
+	// Default should be 1. This exponent is part of the denominator. Increasing it reduces the applied force.
 	RepulsionExponent uint
+
+	// AttractionExponent is an added parameter for the attractive spring force to regulate its effect.
+	// Default should be 1.0. This exponent is part of the numerator. Increasing it increases the applied force.
+	AttractionExponent float64
 }
 
 func NewSpringElectricalR2(
 	optimalDistance float64,
 	repulsionStrength float64,
-	repulsionExponent uint) *SpringElectricalR2 {
+	repulsionExponent uint,
+	attractionExponent float64) *SpringElectricalR2 {
 	return &SpringElectricalR2{
-		OptimalDistance:   optimalDistance,
-		RepulsionStrength: repulsionStrength,
-		RepulsionExponent: repulsionExponent,
+		OptimalDistance:    optimalDistance,
+		RepulsionStrength:  repulsionStrength,
+		RepulsionExponent:  repulsionExponent,
+		AttractionExponent: attractionExponent,
 	}
 }
 
@@ -58,7 +64,11 @@ func (s *SpringElectricalR2) Calculate(g graph.Graph, layoutR2 layout.LayoutR2) 
 
 			var forceAttractive float64
 			if e := g.Edge(id1, id2); e != nil {
-				forceAttractive = (distance * distance) / s.OptimalDistance
+				edgeWeight := 1.
+				if we, ok := e.(graph.WeightedEdge); ok {
+					edgeWeight = we.Weight()
+				}
+				forceAttractive = edgeWeight * math.Pow(distance, s.AttractionExponent) / s.OptimalDistance
 			} else {
 				forceAttractive = 0.
 			}

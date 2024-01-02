@@ -9,7 +9,7 @@ import (
 func TestSpringElectric(t *testing.T) {
 	graph := NewExampleGraph()
 
-	spring := force.NewSpringElectricalR2(10.0, 10.0, 3)
+	spring := force.NewSpringElectricalR2(10.0, 10.0, 3, 1)
 
 	forceStack := force.NewForceStack(uint64(42), 100, 0.001, 0.4, 0.2)
 

@@ -22,18 +22,23 @@ type SpringElectricalR2 struct {
 	// AttractionExponent is an added parameter for the attractive spring force to regulate its effect.
 	// Default should be 1.0. This exponent is part of the numerator. Increasing it increases the applied force.
 	AttractionExponent float64
+
+	// Epsilon is the threshold for small forces. Every force below this value will be omitted.
+	Epsilon float64
 }
 
 func NewSpringElectricalR2(
 	optimalDistance float64,
 	repulsionStrength float64,
 	repulsionExponent uint,
-	attractionExponent float64) *SpringElectricalR2 {
+	attractionExponent float64,
+	epsilon float64) *SpringElectricalR2 {
 	return &SpringElectricalR2{
 		OptimalDistance:    optimalDistance,
 		RepulsionStrength:  repulsionStrength,
 		RepulsionExponent:  repulsionExponent,
 		AttractionExponent: attractionExponent,
+		Epsilon:            epsilon,
 	}
 }
 
@@ -70,6 +75,15 @@ func (s *SpringElectricalR2) Calculate(g graph.Graph, layoutR2 layout.LayoutR2) 
 				}
 				forceAttractive = edgeWeight * math.Pow(distance, s.AttractionExponent) / s.OptimalDistance
 			} else {
+				forceAttractive = 0.
+			}
+
+			// Apply epsilon gate
+			if math.Abs(forceRepulsive) < s.Epsilon {
+				forceRepulsive = 0.
+			}
+
+			if math.Abs(forceAttractive) < s.Epsilon {
 				forceAttractive = 0.
 			}
 

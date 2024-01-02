@@ -11,7 +11,7 @@ import (
 func TestSpringElectricGravity(t *testing.T) {
 	graph := NewExampleGraph()
 
-	spring := force.NewSpringElectricalR2(10.0, 10.0, 3, 1)
+	spring := force.NewSpringElectricalR2(10.0, 10.0, 3, 1, 10e-4)
 
 	gravity := force.NewCentralGravityR2(r2.Vec{X: 0, Y: 0}, 100.0)
 
